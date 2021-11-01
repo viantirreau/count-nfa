@@ -284,12 +284,12 @@ class NFA(FA):
 
         for p, trans in transitions.items():
             if p not in all_reachable_states:
-                print(f"Unreachable state {p} was removed")
+                # print(f"Unreachable state {p} was removed")
                 continue
             for a, qs in trans.items():
                 for q in qs:
                     if q not in all_reachable_states:
-                        print(f"Unreachable state {q} was removed")
+                        # print(f"Unreachable state {q} was removed")
                         continue
                     reachable_transitions[p][a].add(q)
                     rev_reachable_transitions[q][a].add(p)
@@ -366,7 +366,6 @@ class NFA(FA):
         for b, leading_states in self.reverse_transitions.get(state, {}).items():
             # leading_states = self.reverse_transitions[state][b]
             n_r_b[b] = self.compute_n_for_states_set(frozenset(leading_states))
-            # print(f"{state=}, {leading_states=}, n_r_b[{b=}]={n_r_b[b]}")
         n_q_alpha = sum(n_r_b.values())
         self.n_for_states[state] = n_q_alpha
         return n_q_alpha
@@ -443,16 +442,16 @@ class NFA(FA):
             phi=new_probability,
         )
 
-    def count_accepted(self, n: int, eps: float):
+    def count_accepted(self, n: int, eps: float = 1.0, kappa_multiple: int = 1):
         """
         Returns a (1 ± ε)-approximation of |L_n(A_unroll)|
         """
         kappa = math.ceil(n * len(self.states) / eps)
         # c(κ)
         retries_sample = retries_for_sample(kappa)
-        print("Retries per sample", retries_sample)
-        sample_size = 2 * (kappa ** 2)  # 2 * kappa ** 7
-        print("Sample size", sample_size)
+        print(f"Retries per sample {retries_sample}")
+        sample_size = kappa_multiple * kappa  # 2 * kappa ** 7
+        print(f"Sample size {sample_size}")
         exp_minus_five = math.exp(-5)
         # For each state q ∈ I, set N(q_0) = |L(q_0)| = 1
         # and S(q_0) = L(q_0) = {λ}
@@ -515,7 +514,7 @@ class NFA(FA):
         if n == 0:
             return 1 if self.accepts_input("") else 0
         accepted_count = 0
-        for i in tqdm(range(2 ** n)):
+        for i in tqdm(range(2 ** n), leave=False):
             string_i = bin(i)[2:].zfill(n)
             if self.accepts_input(string_i):
                 accepted_count += 1
@@ -710,9 +709,6 @@ class NFA(FA):
                 # this state. Note that a self loop for two or more
                 # symbols will also count as more than one `outgoing`
                 if outgoing_count > 1:
-                    # print(
-                    #     f"State {state} has more than 1 outgoing state in its SCC {scc}"
-                    # )
                     return float("inf")
 
         distance_matrix = floyd_warshall(nfa_nx)
@@ -727,7 +723,6 @@ class NFA(FA):
                 scc_j = sccs[scc_idx_j]
                 for state_i in scc_i:
                     for state_j in scc_j:
-                        # print(state_i, state_j, distance_matrix[state_i][state_j])
                         if distance_matrix[state_i][state_j] < float("inf"):
                             # Is an acyclic singleton
                             if len(scc_j) == 1:
@@ -757,3 +752,17 @@ class NFA(FA):
                 max_cycle_height, start_bias + max_dist_for_init_state
             )
         return max_cycle_height
+
+
+def count_nfa(nfa: NFA, n: int, eps: float = 1, kappa_multiple: int = 1):
+    """
+    Unrolls the given NFA and returns a tuple with the estimated count of
+    accepted strings of length n, as well as the unrolled NFA.
+
+    Returns: Tuple(count_accepted: int, nfa_unroll: NFA)
+    """
+    nfa_unroll = nfa.unroll(n)
+    return (
+        nfa_unroll.count_accepted(n=n, eps=eps, kappa_multiple=kappa_multiple),
+        nfa_unroll,
+    )
