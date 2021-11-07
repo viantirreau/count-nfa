@@ -175,6 +175,7 @@ class NFA(FA):
         self.s_for_states = defaultdict(Counter)
         self.reverse_transitions = reverse_transitions
         self.sorted_symbols = sorted(self.input_symbols)
+        self.remove_sink_states()
 
     def _validate_transition_invalid_symbols(self, start_state, paths):
         """Raise an error if transition symbols are invalid."""
@@ -300,6 +301,47 @@ class NFA(FA):
             reachable_transitions,
             rev_reachable_transitions,
         )
+
+    def remove_sink_states(self):
+        """
+        Removes the states that never reach a final state.
+        In-place operation that modifies the states,
+        initial_states and transitions.
+        """
+        if self.reverse_transitions is None:
+            # Compute the reverse transitions:
+            rev = defaultdict(lambda: defaultdict(set))
+            for p, trans in self.transitions.items():
+                for a, qs in trans.items():
+                    for q in qs:
+                        rev[q][a].add(p)
+            self.reverse_transitions = rev
+
+        non_sink = self.final_states.copy()
+        old_non_sink = set()
+        while old_non_sink != non_sink:
+            old_non_sink = non_sink
+            for p, trans in self.reverse_transitions.items():
+                if p not in non_sink:
+                    continue
+                for a, qs in trans.items():
+                    for q in qs:
+                        non_sink.add(q)
+        self.states = self.states & non_sink
+        self.initial_states = self.initial_states & non_sink
+        new_transitions = defaultdict(lambda: defaultdict(set))
+        new_rev_transitions = defaultdict(lambda: defaultdict(set))
+        for p, trans in self.transitions.items():
+            if p not in non_sink:
+                continue
+            for a, qs in trans.items():
+                for q in qs:
+                    if q not in non_sink:
+                        continue
+                    new_transitions[p][a].add(q)
+                    new_rev_transitions[q][a].add(p)
+        self.transitions = new_transitions
+        self.reverse_transitions = new_rev_transitions
 
     def unroll(self, n: int):
         """
@@ -695,7 +737,8 @@ class NFA(FA):
         # Check that all sccs are either an acyclic singleton
         # (consisting of only one state and no transitions) or
         # a unique simple cycle
-        state_scc_idx_map = dict()
+        state_scc_idx_map = {}
+        acyclic_singleton_idx_map = {}
         for scc_idx, scc in enumerate(sccs):
             for state in scc:
                 state_scc_idx_map[state] = scc_idx
@@ -710,6 +753,7 @@ class NFA(FA):
                 # symbols will also count as more than one `outgoing`
                 if outgoing_count > 1:
                     return float("inf")
+                acyclic_singleton_idx_map[scc_idx] = outgoing_count == 0
 
         distance_matrix = floyd_warshall(nfa_nx)
         scc_graph = DiGraph()
@@ -739,7 +783,7 @@ class NFA(FA):
             scc_for_init_state = sccs[scc_idx_for_init_state]
             start_bias = 1
             # if this start state is in an acyclic singleton
-            if len(scc_for_init_state) == 1:
+            if acyclic_singleton_idx_map[scc_idx_for_init_state]:
                 # start bias should be 0
                 start_bias = 0
             max_dist_for_init_state = max(
@@ -752,6 +796,39 @@ class NFA(FA):
                 max_cycle_height, start_bias + max_dist_for_init_state
             )
         return max_cycle_height
+
+    @staticmethod
+    def from_random_matrix(matrix: np.ndarray) -> "NFA":
+        n_states = matrix.shape[1]
+        alph_size = (matrix.shape[0] - 2) // n_states  # normally 2
+        input_symbols_list = [str(i) for i in range(alph_size)]
+        input_symbols = set(input_symbols_list)
+        states_list = [str(i) for i in range(n_states)]
+        transitions = defaultdict(dict)
+        for idx, symbol in enumerate(input_symbols_list):
+            square_matrix = matrix[idx * n_states : (idx + 1) * n_states, :]
+            for i, from_state in enumerate(states_list):
+                transitions_from_state = defaultdict(set)
+                for j, to_state in enumerate(states_list):
+                    if square_matrix[i, j] == 1:
+                        transitions_from_state[symbol].add(to_state)
+                transitions[from_state].update(transitions_from_state)
+
+        initial_states = set()
+        for idx in range(n_states):
+            if matrix[-2, idx] == 1:
+                initial_states.add(states_list[idx])
+        final_states = set()
+        for idx in range(n_states):
+            if matrix[-1, idx] == 1:
+                final_states.add(states_list[idx])
+        return NFA(
+            states=set(states_list),
+            input_symbols=input_symbols,
+            initial_states=initial_states,
+            final_states=final_states,
+            transitions=transitions,
+        )
 
 
 def count_nfa(nfa: NFA, n: int, eps: float = 1, kappa_multiple: int = 1):
@@ -766,3 +843,42 @@ def count_nfa(nfa: NFA, n: int, eps: float = 1, kappa_multiple: int = 1):
         nfa_unroll.count_accepted(n=n, eps=eps, kappa_multiple=kappa_multiple),
         nfa_unroll,
     )
+
+
+def random_matrix_for_nfa(
+    n_states: int, sparsity: float, n_initial: int, n_final: int, alph_size: int = 2
+):
+    """
+    Generates a random binary matrix of the form
+
+    ---------------------------------------------------
+
+      (n_states, n_states) -> transitions for symbol 0
+         A 1-cell represents a transition from
+           state i to state j by reading a 0
+        (sparsity = number of 0s / number of 1s)
+
+    ---------------------------------------------------
+
+      (n_states, n_states) -> transitions for symbol 1
+
+    ---------------------------------------------------
+      (n_states, ) -> random vector with n_initial 1s
+    ---------------------------------------------------
+      (n_states, ) -> random vector with n_final 1s
+    ---------------------------------------------------
+    """
+    assert 0 <= sparsity <= 1
+    assert n_initial <= n_states
+    assert n_final <= n_states
+    output = []
+    for _ in range(alph_size):
+        output.append(
+            np.random.choice([0, 1], (n_states, n_states), p=[sparsity, 1 - sparsity])
+        )
+    initial_row = np.array([1] * n_initial + [0] * (n_states - n_initial))
+    final_row = np.array([1] * n_final + [0] * (n_states - n_final))
+    np.random.shuffle(initial_row)
+    np.random.shuffle(final_row)
+    output += [initial_row.reshape(1, -1), final_row.reshape(1, -1)]
+    return np.concatenate(output)
