@@ -176,6 +176,7 @@ class NFA(FA):
         self.reverse_transitions = reverse_transitions
         self.sorted_symbols = sorted(self.input_symbols)
         self.remove_sink_states()
+        self.remove_unreachable_states()
 
     def _validate_transition_invalid_symbols(self, start_state, paths):
         """Raise an error if transition symbols are invalid."""
@@ -253,7 +254,9 @@ class NFA(FA):
         return bool(self.read_input(input_str, validate_final=False) & set([state]))
 
     @staticmethod
-    def remove_unreachable_states(initial_states: set, transitions: dict, n: int):
+    def remove_unreachable_states_n_aware(
+        initial_states: set, transitions: dict, n: int
+    ):
         """
         Filters states that are unreachable from an initial state
         by traversing one layer at a time.
@@ -302,6 +305,48 @@ class NFA(FA):
             rev_reachable_transitions,
         )
 
+    def compute_reverse_transitions(self):
+        # Compute the reverse transitions:
+        rev = defaultdict(lambda: defaultdict(set))
+        for p, trans in self.transitions.items():
+            for a, qs in trans.items():
+                for q in qs:
+                    rev[q][a].add(p)
+        self.reverse_transitions = rev
+
+    def remove_unreachable_states(self):
+        """
+        Removes the states that are never reached
+        from an initial state.
+        In-place operation that modifies the states,
+        final_states and transitions.
+        """
+        all_reachable = self.initial_states.copy()
+        old_reachable = set()
+        while old_reachable != all_reachable:
+            old_reachable = all_reachable.copy()
+            for p, trans in self.transitions.items():
+                if p not in old_reachable:
+                    continue
+                for a, qs in trans.items():
+                    for q in qs:
+                        all_reachable.add(q)
+        self.states = self.states & all_reachable
+        self.final_states = self.final_states & all_reachable
+        new_transitions = defaultdict(lambda: defaultdict(set))
+        new_rev_transitions = defaultdict(lambda: defaultdict(set))
+        for p, trans in self.transitions.items():
+            if p not in all_reachable:
+                continue
+            for a, qs in trans.items():
+                for q in qs:
+                    if q not in all_reachable:
+                        continue
+                    new_transitions[p][a].add(q)
+                    new_rev_transitions[q][a].add(p)
+        self.transitions = ddict2dict(new_transitions)
+        self.reverse_transitions = ddict2dict(new_rev_transitions)
+
     def remove_sink_states(self):
         """
         Removes the states that never reach a final state.
@@ -309,20 +354,14 @@ class NFA(FA):
         initial_states and transitions.
         """
         if self.reverse_transitions is None:
-            # Compute the reverse transitions:
-            rev = defaultdict(lambda: defaultdict(set))
-            for p, trans in self.transitions.items():
-                for a, qs in trans.items():
-                    for q in qs:
-                        rev[q][a].add(p)
-            self.reverse_transitions = rev
+            self.compute_reverse_transitions()
 
         non_sink = self.final_states.copy()
         old_non_sink = set()
         while old_non_sink != non_sink:
-            old_non_sink = non_sink
+            old_non_sink = non_sink.copy()
             for p, trans in self.reverse_transitions.items():
-                if p not in non_sink:
+                if p not in old_non_sink:
                     continue
                 for a, qs in trans.items():
                     for q in qs:
@@ -340,8 +379,8 @@ class NFA(FA):
                         continue
                     new_transitions[p][a].add(q)
                     new_rev_transitions[q][a].add(p)
-        self.transitions = new_transitions
-        self.reverse_transitions = new_rev_transitions
+        self.transitions = ddict2dict(new_transitions)
+        self.reverse_transitions = ddict2dict(new_rev_transitions)
 
     def unroll(self, n: int):
         """
@@ -374,7 +413,7 @@ class NFA(FA):
             new_states_by_layer,
             new_transitions,
             rev_transitions,
-        ) = NFA.remove_unreachable_states(
+        ) = NFA.remove_unreachable_states_n_aware(
             initial_states=new_initial_states, transitions=new_transitions, n=n
         )
         new_transitions = ddict2dict(new_transitions)
@@ -780,7 +819,6 @@ class NFA(FA):
         max_cycle_height = 0
         for initial_state in self.initial_states:
             scc_idx_for_init_state = state_scc_idx_map[initial_state]
-            scc_for_init_state = sccs[scc_idx_for_init_state]
             start_bias = 1
             # if this start state is in an acyclic singleton
             if acyclic_singleton_idx_map[scc_idx_for_init_state]:
