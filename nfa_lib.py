@@ -407,15 +407,7 @@ class NFA(FA):
 
         new_initial_states = {(q, 0) for q in self.initial_states}
         new_final_states = {(q, n) for q in self.final_states}
-        # cleanup of unreachable states
-        (
-            new_states,
-            new_states_by_layer,
-            new_transitions,
-            rev_transitions,
-        ) = NFA.remove_unreachable_states_n_aware(
-            initial_states=new_initial_states, transitions=new_transitions, n=n
-        )
+
         new_transitions = ddict2dict(new_transitions)
         rev_transitions = ddict2dict(rev_transitions)
         nfa_unroll = NFA(
@@ -424,10 +416,13 @@ class NFA(FA):
             transitions=new_transitions,
             initial_states=new_initial_states,
             final_states=new_final_states,
-            states_by_layer=new_states_by_layer,
             reverse_transitions=rev_transitions,
         )
-
+        # Update the states_by_layer
+        states_by_layer = defaultdict(set)
+        for state, layer in nfa_unroll.states:
+            states_by_layer[layer].add((state, layer))
+        nfa_unroll.states_by_layer = ddict2dict(states_by_layer)
         return nfa_unroll
 
     def compute_n_for_single_state(self, state):
@@ -474,9 +469,14 @@ class NFA(FA):
             # Now estimate the intersection rate for anchor_state
             for string, count in self.s_for_states[anchor_state].items():
                 s_size += count
+                was_reachable = False
                 for previous_state in states_list[:i]:
-                    if not self.reachable(input_str=string, state=previous_state):
-                        intersection_count += count
+                    if self.reachable(input_str=string, state=previous_state):
+                        was_reachable = True
+                        break
+                # whether string is not in L(q_i) for every q_i < anchor
+                if not was_reachable:
+                    intersection_count += count
             intersection_rate = intersection_count / s_size if s_size > 0 else 0
             total += self.compute_n_for_single_state(anchor_state) * intersection_rate
         # cache the result
@@ -555,7 +555,7 @@ class NFA(FA):
 
                 n_q_alpha = self.compute_n_for_single_state(q)
                 if n_q_alpha == 0:
-                    raise ValueError("oops")
+                    raise ValueError(f"Got 0 when computing n_q_alpha for {q=}")
                 this_q_samples = Counter()
                 # sample probability
                 phi = exp_minus_five / n_q_alpha
@@ -624,13 +624,13 @@ class NFA(FA):
 
         for s in self.states:
             if s in self.final_states:
-                dot.node(s, shape="doublecircle")
+                dot.node(str(s), shape="doublecircle")
             else:
-                dot.node(s, shape="circle")
+                dot.node(str(s), shape="circle")
 
             if s in self.initial_states:
                 dot.node(f"{s}_init", label="", shape="none", height="0", width="0")
-                dot.edge(f"{s}_init", s)
+                dot.edge(f"{s}_init", str(s))
 
         for curr_state, symbol_next_states in self.transitions.items():
             defer_labels = []
@@ -639,9 +639,9 @@ class NFA(FA):
                     if next_state == curr_state:
                         defer_labels.append(symbol)
                         continue
-                    dot.edge(curr_state, next_state, label=symbol)
+                    dot.edge(str(curr_state), str(next_state), label=symbol)
             if defer_labels:
-                dot.edge(curr_state, curr_state, label=",".join(defer_labels))
+                dot.edge(str(curr_state), str(curr_state), label=",".join(defer_labels))
 
         return dot
 
