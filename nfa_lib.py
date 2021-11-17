@@ -3,7 +3,6 @@ import copy
 import math
 from random import random, choices, shuffle, normalvariate
 from collections import Counter, defaultdict
-from turtle import distance
 
 import numpy as np
 import graphviz
