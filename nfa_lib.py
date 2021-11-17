@@ -168,7 +168,6 @@ class NFA(FA):
 
         # --- Counting utilities ---
         self.states_by_layer = states_by_layer
-        self.sketch = defaultdict(dict)
         self.n_for_sets = {}
         self.n_for_states = {}
         self.s_for_states = defaultdict(Counter)
