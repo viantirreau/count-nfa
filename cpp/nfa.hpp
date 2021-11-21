@@ -67,7 +67,7 @@ public:
      * Return the automaton's final configuration after reading 
      * the given string.
      */
-    uiset final_config(vector<int> input_str);
+    uiset final_config(const vector<int> &input_str);
     /**
      * Returns true if the NFA reaches the state after reading input_str.
      * 
@@ -75,7 +75,18 @@ public:
      * @param state 
      * @return true | false
      */
-    bool reachable(vector<int> input_str, int state);
+    bool reachable(const vector<int> &input_str, int state);
+
+    /**
+     * @brief Returns true if the automaton
+     * accepts the given string.
+     * 
+     * @param input_str 
+     * @return true 
+     * @return false 
+     */
+    bool accepts(const vector<int> &input_str);
+
     // Randomized counting
     /**
      * @brief Builds A_unroll with n layers 
@@ -89,5 +100,5 @@ public:
     vector<int> sample(int beta, uiset states, vector<int> curr_string, float phi);
     int count_accepted(int n, float epsilon, int kappa_multiple);
     // Deterministic counting
-    int bruteforce_count_only(int n);
+    long long bruteforce_count_only(int n);
 };

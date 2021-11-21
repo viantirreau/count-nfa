@@ -43,3 +43,27 @@ T intersect(T set_1, U set_2)
     }
     return inter;
 }
+
+/**
+ * @brief Implements a generic set intersection.
+ * Returns true if the intersection is not empty.
+ *  
+ * @tparam T 
+ * @tparam U 
+ * @param set_1 
+ * @param set_2 
+ * @return true | false 
+ */
+template <class T, class U>
+bool not_empty_intersection(T set_1, U set_2)
+{
+    int smaller = set_1.size() < set_2.size() ? 1 : 2;
+    auto smaller_set = smaller == 1 ? set_1 : set_2;
+    auto bigger_set = smaller == 1 ? set_2 : set_1;
+    for (auto e : smaller_set)
+    {
+        if (in(bigger_set, e))
+            return true;
+    }
+    return false;
+}

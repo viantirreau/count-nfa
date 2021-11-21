@@ -124,7 +124,7 @@ void NFA::remove_unreachable_states()
     _reverse_transitions = new_rev_trans;
 };
 
-uiset NFA::final_config(vector<int> input_str)
+uiset NFA::final_config(const vector<int> &input_str)
 {
     // Read the string one symbol at a time
     // and keep track of the current states.
@@ -146,10 +146,39 @@ uiset NFA::final_config(vector<int> input_str)
     return curr_states;
 };
 
-bool NFA::reachable(vector<int> input_str, int state)
+bool NFA::reachable(const vector<int> &input_str, int state)
 {
     return in(NFA::final_config(input_str), state);
 };
+
+bool NFA::accepts(const vector<int> &input_str)
+{
+    return not_empty_intersection(NFA::final_config(input_str), _final_states);
+}
+
+vector<int> int_to_binary(int number, int length)
+{
+    // Initialize result with `length` zeros
+    vector<int> result(length);
+    for (int bit_idx = 0; bit_idx < length; bit_idx++)
+        result[length - bit_idx - 1] = (number >> bit_idx) & 1;
+    return result;
+}
+
+long long NFA::bruteforce_count_only(int n)
+{
+    long long count = 0;
+    long long max_string_id = 1 << n;
+    long long string_id;
+    vector<int> string;
+    for (string_id = 0; string_id < max_string_id; string_id++)
+    {
+        string = int_to_binary(string_id, n);
+        if (accepts(string))
+            count++;
+    }
+    return count;
+}
 
 NFA NFA::unroll(int n)
 {

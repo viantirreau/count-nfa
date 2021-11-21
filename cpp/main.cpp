@@ -11,22 +11,26 @@ int main(int argc, char **argv)
 	unordered_set<int> initial_states;
 	unordered_set<int> final_states;
 	unordered_map<int, map<int, unordered_set<int>>> transitions;
-	unordered_set<int> states = {0, 1, 2, 3, 4, 5, 6};
+	unordered_set<int> states = {0, 1};
+	// unordered_set<int> states = {0, 1, 2, 3, 4, 5, 6};
 	unordered_set<int> input_symbols = {0, 1};
 	initial_states.insert(0);
-	final_states.insert({6});
-	std::vector<int> v_intersection;
+	final_states.insert(1);
+	vector<int> v_intersection;
 
-	transitions[0][0].insert(1);
-	transitions[0][1].insert(3);
+	transitions[0][0].insert({0, 1});
+	transitions[1][1].insert(0);
+
+	// transitions[0][0].insert(1);
+	// transitions[0][1].insert(3);
 	// transitions[1][0].insert(2);
-	transitions[2][0].insert(2);
-	transitions[2][1].insert(2);
-	transitions[3][0].insert(4);
-	transitions[4][0].insert(5);
-	transitions[5][0].insert(6);
-	transitions[6][0].insert(6);
-	transitions[6][1].insert(6);
+	// transitions[2][0].insert(2);
+	// transitions[2][1].insert(2);
+	// transitions[3][0].insert(4);
+	// transitions[4][0].insert(5);
+	// transitions[5][0].insert(6);
+	// transitions[6][0].insert(6);
+	// transitions[6][1].insert(6);
 
 	// if (n == 0)
 	// {
@@ -45,7 +49,9 @@ int main(int argc, char **argv)
 	// }
 
 	NFA nfa = NFA(states, input_symbols, transitions, initial_states, final_states);
-	NFA unrolled = nfa.unroll(100);
+	// std::cout << nfa.bruteforce_count_only(15) << endl;
+	std::cout << nfa.bruteforce_count_only(atoi(argv[1])) << endl;
+	// NFA unrolled = nfa.unroll(100);
 	// int accepted_count = 0;
 	// deque<pair<int, int>> visit_queue;
 
