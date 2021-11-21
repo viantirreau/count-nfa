@@ -38,6 +38,9 @@ public:
     umap<int, map<vector<int>, int>> _s_for_states;
     // Sorted symbols for iteration and sampling
     vector<int> _sorted_symbols;
+    // Map of the form new_q => {old_q, layer}
+    // Useful for debugging the unroll operation
+    map<int, pair<int, int>> _pre_unroll_state_map;
     // Constructor for NFA(Q, Σ, Δ, I, F)
     NFA(uiset states, uiset input_symbols,
         trans_t transitions,
@@ -74,6 +77,12 @@ public:
      */
     bool reachable(vector<int> input_str, int state);
     // Randomized counting
+    /**
+     * @brief Builds A_unroll with n layers 
+     * to estimate |L(F^n)|
+     * @param n 
+     * @return NFA 
+     */
     NFA unroll(int n);
     int compute_n_for_single_state(int state);
     int compute_n_for_states_set(uiset states);

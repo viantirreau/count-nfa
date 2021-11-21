@@ -45,6 +45,7 @@ int main(int argc, char **argv)
 	// }
 
 	NFA nfa = NFA(states, input_symbols, transitions, initial_states, final_states);
+	NFA unrolled = nfa.unroll(100);
 	// int accepted_count = 0;
 	// deque<pair<int, int>> visit_queue;
 
