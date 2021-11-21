@@ -10,7 +10,7 @@ int main(int argc, char **argv)
 	// empty set container
 	unordered_set<int> initial_states;
 	unordered_set<int> final_states;
-	unordered_map<int, map<int, set<int>>> transitions;
+	unordered_map<int, map<int, unordered_set<int>>> transitions;
 	if (argc < 2)
 		exit(1);
 

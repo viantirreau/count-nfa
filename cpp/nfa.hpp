@@ -6,7 +6,7 @@ using namespace std;
 #define uiset unordered_set<int>
 #define iset set<int>
 #define umap unordered_map
-#define trans_t umap<int, map<int, iset>>
+#define trans_t umap<int, map<int, uiset>>
 class NFA
 {
 public:
@@ -44,11 +44,34 @@ public:
         uiset initial_states,
         uiset final_states);
     // Handle dirty NFAs with useless states
+    /** 
+     * Removes the states that never reach a final state. 
+     * In-place operation that modifies the states, 
+     * initial_states and transitions.
+     **/
     void remove_sink_states();
+    /** 
+     * Removes the states that are never reached
+     * from an initial state.
+     * In-place operation that modifies the states,
+     * final_states and transitions.
+     **/
     void remove_unreachable_states();
+    // Fill the _reverse_transitions, useful in later computations
     void compute_reverse_transitions();
     // Reachability
+    /**
+     * Return the automaton's final configuration after reading 
+     * the given string.
+     */
     uiset final_config(vector<int> input_str);
+    /**
+     * Returns true if the NFA reaches the state after reading input_str.
+     * 
+     * @param input_str 
+     * @param state 
+     * @return true | false
+     */
     bool reachable(vector<int> input_str, int state);
     // Randomized counting
     NFA unroll(int n);
