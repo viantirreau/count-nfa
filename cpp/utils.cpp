@@ -2,12 +2,33 @@
 
 using namespace std;
 
+/**
+ * @brief Implements an equivalent of Python `in`
+ * keyword for checking set/map/iterator pertenence.
+ * 
+ * The runtime depends on how fast std::find is in
+ * this data structure. 
+ * 
+ * @param where_to_search: iterable
+ * @param value
+ * @return int 
+ */
 template <class T, class U>
-int in(T where_to_search, U value)
+bool in(T where_to_search, U value)
 {
     return where_to_search.find(value) != where_to_search.end();
 }
 
+/**
+ * @brief Implements a generic set intersection.
+ * Supports unordered_set of any type as well.
+ *  
+ * @tparam T 
+ * @tparam U 
+ * @param set_1 
+ * @param set_2 
+ * @return T 
+ */
 template <class T, class U>
 T intersect(T set_1, U set_2)
 {

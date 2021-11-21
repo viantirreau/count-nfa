@@ -21,15 +21,9 @@ NFA::NFA(uiset states, uiset input_symbols,
     // convert uiset to vector, save in this->_sorted_symbols
     copy(input_symbols.begin(), input_symbols.end(), back_inserter(_sorted_symbols));
     sort(_sorted_symbols.begin(), _sorted_symbols.end());
-
-    for (auto i : _sorted_symbols)
-    {
-        cout << i << "\n";
-    }
-    cout << endl;
     compute_reverse_transitions();
-    // remove_sink_states();
-    // remove_unreachable_states();
+    remove_sink_states();
+    remove_unreachable_states();
 }
 
 void NFA::compute_reverse_transitions()

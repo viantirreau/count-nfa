@@ -11,19 +11,15 @@ int main(int argc, char **argv)
 	unordered_set<int> initial_states;
 	unordered_set<int> final_states;
 	unordered_map<int, map<int, unordered_set<int>>> transitions;
-	if (argc < 2)
-		exit(1);
-
-	int n = atoi(argv[1]);
-	unordered_set<int> states = {1, 2, 3, 4, 5, 6};
-	unordered_set<int> input_symbols = {100, 22, -3, 4, 5, 6};
+	unordered_set<int> states = {0, 1, 2, 3, 4, 5, 6};
+	unordered_set<int> input_symbols = {0, 1};
 	initial_states.insert(0);
-	final_states.insert({2, 6});
+	final_states.insert({6});
 	std::vector<int> v_intersection;
 
 	transitions[0][0].insert(1);
 	transitions[0][1].insert(3);
-	transitions[1][0].insert(2);
+	// transitions[1][0].insert(2);
 	transitions[2][0].insert(2);
 	transitions[2][1].insert(2);
 	transitions[3][0].insert(4);
