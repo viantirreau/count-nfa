@@ -237,6 +237,10 @@ NFA NFA::unroll(int n)
                 for (int i = 0; i < n; i++)
                 {
                     // Insert the [(p, i)][a] -> (q, i+1) into the new transitions
+                    bool valid = (old_state_layer_to_new_states.find({p, i}) !=
+                                  old_state_layer_to_new_states.end());
+                    if (!valid)
+                        continue;
                     int new_p_layer_i = old_state_layer_to_new_states[{p, i}];
                     int new_q_layer_i_1 = old_state_layer_to_new_states[{q, i + 1}];
                     new_trans[new_p_layer_i][a].insert(new_q_layer_i_1);
@@ -388,6 +392,8 @@ double NFA::count_accepted(int n, float epsilon, int kappa_multiple)
     ll retries_sample = retries_per_sample(kappa);
     cout << "Retries per sample " << retries_sample << endl;
     ll sample_size = kappa_multiple * kappa;
+    ll sample_hits = 0, sample_misses = 0;
+
     cout << "Sample size " << sample_size << endl;
     double exp_minus_five = exp(-5);
     // For each state q ∈ I, set N(q_0) = |L(q_0)| = 1
@@ -428,7 +434,10 @@ double NFA::count_accepted(int n, float epsilon, int kappa_multiple)
                 {
                     vector<int> potential_sample = sample(i, {q}, {}, phi);
                     if (!potential_sample.size())
+                    {
+                        sample_misses++;
                         continue;
+                    }
                     // update this_q_samples' count with
                     // the just sampled string
                     if (!in(this_q_samples, potential_sample))
@@ -436,6 +445,7 @@ double NFA::count_accepted(int n, float epsilon, int kappa_multiple)
                     else
                         this_q_samples[potential_sample]++;
                     sampled_successfully = true;
+                    sample_hits++;
                     break;
                 }
                 if (!sampled_successfully)
@@ -444,6 +454,9 @@ double NFA::count_accepted(int n, float epsilon, int kappa_multiple)
             _s_for_states[q] = this_q_samples;
         }
     }
+    cout << "Sample misses: " << sample_misses << " | "
+         << "Sample hits: " << sample_hits << " | "
+         << "Miss ratio: " << (double)sample_misses / sample_hits << endl;
     // |L(F^n)|
     return compute_n_for_states_set(_final_states);
 }
