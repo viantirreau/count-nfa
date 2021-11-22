@@ -7,6 +7,7 @@ using namespace std;
 #define iset set<int>
 #define umap unordered_map
 #define trans_t umap<int, map<int, uiset>>
+#define ll long long
 class NFA
 {
 public:
@@ -24,13 +25,13 @@ public:
     umap<int, iset> _states_by_layer;
     // Store the sampled predictions
     // for one state
-    umap<int, int> _n_for_states;
+    umap<int, double> _n_for_states;
     // Store the sampled predictions
     // for a set of states
     // This **has to be** a map,
     // can't be an unordered_map
     // because sets are not hashable
-    map<uiset, int> _n_for_sets;
+    map<uiset, double> _n_for_sets;
     // Store the counts for every
     // sampled string, mapping from
     // a state to strings (vector of ints)
@@ -95,10 +96,28 @@ public:
      * @return NFA 
      */
     NFA unroll(int n);
-    int compute_n_for_single_state(int state);
-    int compute_n_for_states_set(uiset states);
+    /**
+     * @brief 
+     * Compute N(pᵅ) = Σ N(R_b) for R_b being the set of 
+     * incoming states which connect to pᵅ after reading symbol b.
+     *  
+     * In simple terms, it receives a states and estimates
+     * the number of different strings leading to it.
+     * @param state 
+     * @return long long 
+     */
+    double compute_n_for_single_state(int state);
+    /**
+     * @brief 
+     * Compute N(Pᵅ) = Σ N(pᵅ)· |S(pᵅ)-Union(L(qᵅ) for q ≺ p)| / |S(pᵅ)| 
+     * In simple terms, it receives a set of states and estimates 
+     * the number of different strings leading to all of them.
+     * @param states 
+     * @return long long
+     */
+    double compute_n_for_states_set(uiset states);
     vector<int> sample(int beta, uiset states, vector<int> curr_string, float phi);
-    int count_accepted(int n, float epsilon, int kappa_multiple);
+    ll count_accepted(int n, float epsilon, int kappa_multiple);
     // Deterministic counting
-    long long bruteforce_count_only(int n);
+    ll bruteforce_count_only(int n);
 };

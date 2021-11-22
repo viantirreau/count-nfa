@@ -1,6 +1,7 @@
 #include <bits/stdc++.h>
 #include "utils.cpp"
 #include "nfa.hpp"
+
 using namespace std;
 
 #define uset unordered_set
@@ -8,6 +9,13 @@ using namespace std;
 #define iset set<int>
 #define umap unordered_map
 #define trans_t umap<int, map<int, uiset>>
+#define ll long long
+
+// Will be used to obtain a seed for the random number engine
+random_device rd;
+// Standard mersenne_twister_engine seeded with rd()
+mt19937 gen(rd());
+uniform_real_distribution rand_zero_one(0.0, 1.0);
 
 NFA::NFA(uiset states, uiset input_symbols,
          trans_t transitions,
@@ -244,4 +252,107 @@ NFA NFA::unroll(int n)
     new_nfa._states_by_layer = states_by_layer;
     new_nfa._pre_unroll_state_map = new_state_to_old_state_layer;
     return new_nfa;
+}
+
+double NFA::compute_n_for_single_state(int state)
+{
+    if (in(_n_for_states, state))
+        return _n_for_states[state];
+    // will add the N(Pᵅ) calculated with `compute_n_for_states_set`
+    double n_q_alpha = 0;
+    if (!in(_reverse_transitions, state))
+    {
+        _n_for_states[state] = 0;
+        return 0;
+    }
+    for (auto &[a, leading_states] : _reverse_transitions[state])
+    {
+        n_q_alpha += compute_n_for_states_set(leading_states);
+    }
+    // Cache the result for later
+    _n_for_states[state] = n_q_alpha;
+    return n_q_alpha;
+}
+
+double NFA::compute_n_for_states_set(uiset states)
+{
+    int len_states = states.size();
+    if (len_states == 0)
+        return 0;
+    if (in(_n_for_sets, states))
+        return _n_for_sets[states];
+    // linear order ≺
+    vector<int> states_list(states.begin(), states.end());
+    sort(states_list.begin(), states_list.end());
+    // Count the first state in the list alone
+    double intersection_rate, total = _n_for_states[states_list[0]];
+    for (int i = 1; i < len_states; i++)
+    {
+        // states[i] = (q, i), where q is the original state name in A
+        int anchor_state = states_list[i];
+        int s_size = 0, intersection_count = 0;
+        // Now estimate the intersection rate for anchor_state
+        for (auto &[string, count] : _s_for_states[anchor_state])
+        {
+            s_size += count;
+            bool was_reachable = false;
+            for (int j = 0; j < i; j++)
+            {
+                int previous_state = states_list[j];
+                if (reachable(string, previous_state))
+                {
+                    was_reachable = true;
+                    break;
+                }
+            }
+            // Whether string is not in L(q_i) for every q_i < anchor
+            if (!was_reachable)
+                intersection_count += count;
+        }
+        intersection_rate = s_size > 0 ? intersection_count / s_size : 0.0;
+        total += compute_n_for_single_state(anchor_state) * intersection_rate;
+    }
+    // Cache the result for later
+    _n_for_sets[states] = total;
+    return total;
+}
+
+vector<int> NFA::sample(int beta, uiset states, vector<int> curr_string, float phi)
+{
+
+    if (beta == 0)
+    {
+        if (rand_zero_one(gen) <= phi)
+            return curr_string;
+        return {};
+    }
+    // p_beta_b will store all the states on layer i-1
+    // which lead to r after reading b={0,1}
+    // {'0': {...leading_states}, '1': {...leading_states}}
+    umap<int, uiset> p_beta_b;
+    // n_p_beta_b will store all the N(Pᵅ) calculated with
+    // `compute_n_for_states_set`
+    umap<int, int> n_p_beta_b;
+    for (auto b : _sorted_symbols)
+    {
+        // Fill the leading states to do the backward pass
+        uiset all_leading_states, leading_states;
+        for (auto r : states)
+        {
+            if (in(_reverse_transitions, r) && in(_reverse_transitions[r], b))
+            {
+                leading_states = _reverse_transitions[r][b];
+                all_leading_states.insert(leading_states.begin(), leading_states.end());
+            }
+        }
+        p_beta_b[b] = all_leading_states;
+        n_p_beta_b[b] = compute_n_for_states_set(all_leading_states);
+    }
+    double sum_n_p_beta = 0;
+    for (auto &[b, n_p_beta] : n_p_beta_b)
+        sum_n_p_beta += n_p_beta;
+    if (sum_n_p_beta == 0)
+        return {};
+    // Now that we have the sums for each leading symbol,
+    // compute the weights to sample the next one.
 }
