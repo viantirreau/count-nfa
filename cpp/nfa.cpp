@@ -278,9 +278,11 @@ double NFA::compute_n_for_states_set(uiset states)
 {
     int len_states = states.size();
     if (len_states == 0)
-        return 0;
-    if (in(_n_for_sets, states))
-        return _n_for_sets[states];
+        return 0.0;
+    iset ordered_states;
+    ordered_states.insert(states.begin(), states.end());
+    if (in(_n_for_sets, ordered_states))
+        return _n_for_sets[ordered_states];
     // linear order ≺
     vector<int> states_list(states.begin(), states.end());
     sort(states_list.begin(), states_list.end());
@@ -313,7 +315,7 @@ double NFA::compute_n_for_states_set(uiset states)
         total += compute_n_for_single_state(anchor_state) * intersection_rate;
     }
     // Cache the result for later
-    _n_for_sets[states] = total;
+    _n_for_sets[ordered_states] = total;
     return total;
 }
 
@@ -355,4 +357,18 @@ vector<int> NFA::sample(int beta, uiset states, vector<int> curr_string, float p
         return {};
     // Now that we have the sums for each leading symbol,
     // compute the weights to sample the next one.
+    int n_symbols = _sorted_symbols.size();
+    vector<double> weights(n_symbols);
+    for (int s = 0; s < n_symbols; s++)
+        weights[s] = n_p_beta_b[_sorted_symbols[s]] / sum_n_p_beta;
+
+    discrete_distribution<int> weighted_sampler(weights.begin(), weights.end());
+    int chosen_symbol = _sorted_symbols[weighted_sampler(gen)];
+    // w_beta-1 = b · w_beta
+    curr_string.push_back(chosen_symbol);
+    // p_beta-1
+    uiset chosen_states = p_beta_b[chosen_symbol];
+    //  phi / p_b
+    float new_probability = phi / (n_p_beta_b[chosen_symbol] / sum_n_p_beta);
+    return sample(beta - 1, chosen_states, curr_string, new_probability);
 }

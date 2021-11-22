@@ -31,7 +31,7 @@ public:
     // This **has to be** a map,
     // can't be an unordered_map
     // because sets are not hashable
-    map<uiset, double> _n_for_sets;
+    map<iset, double> _n_for_sets;
     // Store the counts for every
     // sampled string, mapping from
     // a state to strings (vector of ints)
