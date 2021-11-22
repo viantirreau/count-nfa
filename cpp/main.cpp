@@ -49,10 +49,12 @@ int main(int argc, char **argv)
 	// }
 
 	NFA nfa = NFA(states, input_symbols, transitions, initial_states, final_states);
-	NFA unrolled = nfa.unroll(atoi(argv[1]));
+	int n = atoi(argv[1]);
+	NFA unrolled = nfa.unroll(n);
 	// std::cout << nfa.bruteforce_count_only(15) << endl;
-	std::cout << nfa.bruteforce_count_only(atoi(argv[1])) << " "
-			  << unrolled.bruteforce_count_only(atoi(argv[1])) << endl;
+	double estimation = unrolled.count_accepted(n, 1.0, 1.0);
+	std::cout << nfa.bruteforce_count_only(n) << " "
+			  << estimation << endl;
 	// int accepted_count = 0;
 	// deque<pair<int, int>> visit_queue;
 

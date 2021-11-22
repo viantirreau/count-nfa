@@ -372,3 +372,76 @@ vector<int> NFA::sample(int beta, uiset states, vector<int> curr_string, float p
     float new_probability = phi / (n_p_beta_b[chosen_symbol] / sum_n_p_beta);
     return sample(beta - 1, chosen_states, curr_string, new_probability);
 }
+// Computes c(κ)
+ll retries_per_sample(ll kappa)
+{
+    return ceil(
+        (2 + log(4) + 8 * log(kappa)) / log(1.0 / (1.0 - exp(-9))));
+}
+
+double NFA::count_accepted(int n, float epsilon, int kappa_multiple)
+{
+    ll kappa = ceil(n * _states.size() / epsilon);
+    // c(κ)
+    ll retries_sample = retries_per_sample(kappa);
+    cout << "Retries per sample " << retries_sample << endl;
+    ll sample_size = kappa_multiple * kappa;
+    cout << "Sample size " << sample_size << endl;
+    double exp_minus_five = exp(-5);
+    // For each state q ∈ I, set N(q_0) = |L(q_0)| = 1
+    // and S(q_0) = L(q_0) = {λ}
+    vector<int> empty_vector;
+    map<vector<int>, ll> empty_string;
+    empty_string[empty_vector] = sample_size;
+    for (auto q : _states_by_layer[0])
+    {
+        // The empty string will have sample_size samples
+        _s_for_states[q] = empty_string;
+        // And there's only one way to accept the empty string
+        _n_for_states[q] = 1.0;
+    }
+    // For each i = 1, . . . , n and state q ∈ Q:
+    //   (a) Compute N(q_i) given sketch[i-1]
+    //   (b) Sample polynomially many uniform elements from L(q_i) using
+    //       N(q_i) and sketch[i-1], and let S(q_i) be the multiset of
+    //       uniform samples obtained
+    double n_q_alpha;
+    for (int i = 1; i <= n; i++)
+    {
+        for (auto q : _states_by_layer[i])
+        {
+            n_q_alpha = compute_n_for_single_state(q);
+            if (n_q_alpha == 0)
+            {
+                cout << "Got 0 when computing n_q_alpha for q=" << q << endl;
+                exit(1);
+            }
+            map<vector<int>, ll> this_q_samples;
+            // sample probability
+            float phi = exp_minus_five / n_q_alpha;
+            for (ll sample_i = 0; sample_i < sample_size; sample_i++)
+            {
+                bool sampled_successfully = false;
+                for (ll retry = 0; retry < retries_sample; retry++)
+                {
+                    vector<int> potential_sample = sample(i, {q}, {}, phi);
+                    if (!potential_sample.size())
+                        continue;
+                    // update this_q_samples' count with
+                    // the just sampled string
+                    if (!in(this_q_samples, potential_sample))
+                        this_q_samples[potential_sample] = 1;
+                    else
+                        this_q_samples[potential_sample]++;
+                    sampled_successfully = true;
+                    break;
+                }
+                if (!sampled_successfully)
+                    return 0;
+            }
+            _s_for_states[q] = this_q_samples;
+        }
+    }
+    // |L(F^n)|
+    return compute_n_for_states_set(_final_states);
+}

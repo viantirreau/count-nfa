@@ -36,7 +36,7 @@ public:
     // sampled string, mapping from
     // a state to strings (vector of ints)
     // and their respective sampled counts
-    umap<int, map<vector<int>, int>> _s_for_states;
+    umap<int, map<vector<int>, ll>> _s_for_states;
     // Sorted symbols for iteration and sampling
     vector<int> _sorted_symbols;
     // Map of the form new_q => {old_q, layer}
@@ -116,8 +116,10 @@ public:
      * @return long long
      */
     double compute_n_for_states_set(uiset states);
+
     vector<int> sample(int beta, uiset states, vector<int> curr_string, float phi);
-    ll count_accepted(int n, float epsilon, int kappa_multiple);
+    // Returns a (1 ± ε)-approximation of |L_n(A_unroll)|
+    double count_accepted(int n, float epsilon, int kappa_multiple);
     // Deterministic counting
     ll bruteforce_count_only(int n);
 };
