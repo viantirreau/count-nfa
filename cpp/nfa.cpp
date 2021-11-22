@@ -205,8 +205,6 @@ NFA NFA::unroll(int n)
         new_states.insert(new_state_id);
         // Compute the new initial states
         new_init_states.insert(new_state_id);
-        // Update the states by layer
-        states_by_layer[0].insert(new_state_id);
         // And update the reverse map
         new_state_to_old_state_layer[new_state_id] = {init_state, 0};
         old_state_layer_to_new_states[{init_state, 0}] = new_state_id++;
@@ -218,10 +216,8 @@ NFA NFA::unroll(int n)
         {
             // Create the state
             new_states.insert(new_state_id);
-            // Update the states by layer
-            states_by_layer[layer].insert(new_state_id);
             // Compute the new final states if needed
-            if (layer == n)
+            if (layer == n && in(_final_states, state))
                 new_final_states.insert(new_state_id);
             // And update the reverse map
             new_state_to_old_state_layer[new_state_id] = {state, layer};
@@ -238,7 +234,7 @@ NFA NFA::unroll(int n)
         {
             for (int q : qs)
             {
-                for (int i = 0; i <= n; i++)
+                for (int i = 0; i < n; i++)
                 {
                     // Insert the [(p, i)][a] -> (q, i+1) into the new transitions
                     int new_p_layer_i = old_state_layer_to_new_states[{p, i}];
@@ -249,6 +245,11 @@ NFA NFA::unroll(int n)
         }
     }
     NFA new_nfa = NFA(new_states, _input_symbols, new_trans, new_init_states, new_final_states);
+    for (auto new_state : new_nfa._states)
+    {
+        auto old_state_layer = new_state_to_old_state_layer[new_state];
+        states_by_layer[old_state_layer.second].insert(new_state);
+    }
     new_nfa._states_by_layer = states_by_layer;
     new_nfa._pre_unroll_state_map = new_state_to_old_state_layer;
     return new_nfa;
@@ -279,13 +280,14 @@ double NFA::compute_n_for_states_set(uiset states)
     int len_states = states.size();
     if (len_states == 0)
         return 0.0;
+    // isets are hashable, while uisets aren't
+    // we need to cache them, so the key is an iset
     iset ordered_states;
     ordered_states.insert(states.begin(), states.end());
     if (in(_n_for_sets, ordered_states))
         return _n_for_sets[ordered_states];
     // linear order ≺
-    vector<int> states_list(states.begin(), states.end());
-    sort(states_list.begin(), states_list.end());
+    vector<int> states_list(ordered_states.begin(), ordered_states.end());
     // Count the first state in the list alone
     double intersection_rate, total = _n_for_states[states_list[0]];
     for (int i = 1; i < len_states; i++)

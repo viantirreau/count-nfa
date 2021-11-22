@@ -16,6 +16,8 @@ Classes and methods for working with nondeterministic finite automata.
 Source: https://github.com/caleb531/automata
 """
 
+DISABLE_TQDM = True
+
 
 def ddict2dict(d):
     for k, v in d.items():
@@ -543,12 +545,14 @@ class NFA(FA):
         #   (b) Sample polynomially many uniform elements from L(q_i) using
         #       N(q_i) and sketch[i − 1], and let S(q_i) be the multiset of
         #       uniform samples obtained
-        for i in tqdm(range(1, n + 1), desc="Layer", position=0):
+        for i in tqdm(range(1, n + 1), desc="Layer", position=0, disable=DISABLE_TQDM):
+            print(i, self.s_for_states, self.n_for_states)
             for q in tqdm(
                 self.states_by_layer[i],
                 desc=f"State at layer {i}",
                 position=1,
                 leave=False,
+                disable=DISABLE_TQDM,
             ):
 
                 n_q_alpha = self.compute_n_for_single_state(q)
@@ -558,7 +562,11 @@ class NFA(FA):
                 # sample probability
                 phi = exp_minus_five / n_q_alpha
                 for _ in tqdm(
-                    range(sample_size), desc="Sampling", position=2, leave=False
+                    range(sample_size),
+                    desc="Sampling",
+                    position=2,
+                    leave=False,
+                    disable=DISABLE_TQDM,
                 ):
                     sampled_successfully = False
                     for retry in range(retries_sample):
@@ -918,3 +926,15 @@ def random_matrix_for_nfa(
     np.random.shuffle(final_row)
     output += [initial_row.reshape(1, -1), final_row.reshape(1, -1)]
     return np.concatenate(output)
+
+
+if __name__ == "__main__":
+    nfa = NFA(
+        states={"0", "1"},
+        input_symbols={"0", "1"},
+        transitions={"0": {"0": {"0", "1"}}, "1": {"1": {"0"}}},
+        initial_states={"0"},
+        final_states={"1"},
+    )
+    est, _ = count_nfa(nfa, 3, 1, 1)
+    print(est)

@@ -49,7 +49,8 @@ int main(int argc, char **argv)
 	// }
 
 	NFA nfa = NFA(states, input_symbols, transitions, initial_states, final_states);
-	int n = atoi(argv[1]);
+	// int n = atoi(argv[1]);
+	int n = 3;
 	NFA unrolled = nfa.unroll(n);
 	// std::cout << nfa.bruteforce_count_only(15) << endl;
 	double estimation = unrolled.count_accepted(n, 1.0, 1.0);
