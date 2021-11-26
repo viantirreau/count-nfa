@@ -325,12 +325,12 @@ double NFA::compute_n_for_states_set(uiset states)
     return total;
 }
 
-vector<int> NFA::sample(int beta, uiset states, vector<int> curr_string, float phi)
+vector<int> NFA::sample(int beta, uiset states, vector<int> curr_string, float phi, float phi_multiple)
 {
 
     if (beta == 0)
     {
-        if (rand_zero_one(gen) <= phi)
+        if (rand_zero_one(gen) <= phi * phi_multiple)
             return curr_string;
         return {};
     }
@@ -376,7 +376,7 @@ vector<int> NFA::sample(int beta, uiset states, vector<int> curr_string, float p
     uiset chosen_states = p_beta_b[chosen_symbol];
     //  phi / p_b
     float new_probability = phi / (n_p_beta_b[chosen_symbol] / sum_n_p_beta);
-    return sample(beta - 1, chosen_states, curr_string, new_probability);
+    return sample(beta - 1, chosen_states, curr_string, new_probability, phi_multiple);
 }
 // Computes c(κ)
 ll retries_per_sample(ll kappa)
@@ -385,16 +385,21 @@ ll retries_per_sample(ll kappa)
         (2 + log(4) + 8 * log(kappa)) / log(1.0 / (1.0 - exp(-9))));
 }
 
-double NFA::count_accepted(int n, float epsilon, int kappa_multiple)
+double NFA::count_accepted(int n, float epsilon, int kappa_multiple, float phi_multiple)
 {
+    if (!_states.size())
+    {
+        cout << "Empty NFA\n";
+        return 0;
+    }
     ll kappa = ceil(n * _states.size() / epsilon);
     // c(κ)
     ll retries_sample = retries_per_sample(kappa);
-    cout << "Retries per sample " << retries_sample << endl;
+    cout << "Retries per sample: " << retries_sample << endl;
     ll sample_size = kappa_multiple * kappa;
     ll sample_hits = 0, sample_misses = 0;
 
-    cout << "Sample size " << sample_size << endl;
+    cout << "Sample size: " << sample_size << endl;
     double exp_minus_five = exp(-5);
     // For each state q ∈ I, set N(q_0) = |L(q_0)| = 1
     // and S(q_0) = L(q_0) = {λ}
@@ -432,7 +437,7 @@ double NFA::count_accepted(int n, float epsilon, int kappa_multiple)
                 bool sampled_successfully = false;
                 for (ll retry = 0; retry < retries_sample; retry++)
                 {
-                    vector<int> potential_sample = sample(i, {q}, {}, phi);
+                    vector<int> potential_sample = sample(i, {q}, {}, phi, phi_multiple);
                     if (!potential_sample.size())
                     {
                         sample_misses++;
@@ -454,8 +459,8 @@ double NFA::count_accepted(int n, float epsilon, int kappa_multiple)
             _s_for_states[q] = this_q_samples;
         }
     }
-    cout << "Sample misses: " << sample_misses << " | "
-         << "Sample hits: " << sample_hits << " | "
+    cout << "Sample misses: " << sample_misses << "\n"
+         << "Sample hits: " << sample_hits << "\n"
          << "Miss ratio: " << (double)sample_misses / sample_hits << endl;
     // |L(F^n)|
     return compute_n_for_states_set(_final_states);

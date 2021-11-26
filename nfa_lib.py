@@ -874,6 +874,24 @@ class NFA(FA):
             transitions=transitions,
         )
 
+    def to_text(self) -> str:
+        ret = []
+        trans = []
+        for p, tr in self.transitions.items():
+            for a, qs in tr.items():
+                for q in qs:
+                    trans.append(f"{p} {a} {q}")
+
+        ret.append(f"{len(self.states)} {len(self.input_symbols)} {len(trans)}")
+        sort_states = sorted(self.states)
+        ret.append(" ".join(sort_states))
+        initial_binary = ["1" if i in self.initial_states else "0" for i in sort_states]
+        final_binary = ["1" if i in self.final_states else "0" for i in sort_states]
+        ret.append(" ".join(initial_binary))
+        ret.append(" ".join(final_binary))
+        ret.extend(trans)
+        return "\n".join(ret)
+
 
 def count_nfa(nfa: NFA, n: int, eps: float = 1, kappa_multiple: int = 1):
     """
