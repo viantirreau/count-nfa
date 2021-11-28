@@ -3,6 +3,7 @@
 #include "nfa.hpp"
 
 using namespace std;
+using namespace std::chrono;
 
 int main(int argc, char **argv)
 {
@@ -60,9 +61,18 @@ int main(int argc, char **argv)
 
 	NFA nfa = NFA(states, input_symbols, transitions, initial_states, final_states);
 	NFA unrolled = nfa.unroll(n_str_len);
+	auto t0 = high_resolution_clock::now();
 	double estimation = unrolled.count_accepted(n_str_len, epsilon, kappa_multiple, phi_multiple);
-	std::cout << "Bruteforce: " << nfa.bruteforce_count_only(n_str_len) << "\n"
-			  << "Estimation: " << estimation << endl;
+	auto t1 = high_resolution_clock::now();
+	ll bruteforce = nfa.bruteforce_count_only(n_str_len);
+	auto t2 = high_resolution_clock::now();
+	auto estimation_time = duration_cast<milliseconds>(t1 - t0).count();
+	auto bruteforce_time = duration_cast<milliseconds>(t2 - t1).count();
+
+	std::cout << "bruteforce " << bruteforce << "\n"
+			  << "bruteforce_time " << bruteforce_time << "\n"
+			  << "estimation " << estimation << "\n"
+			  << "estimation_time " << estimation_time << endl;
 
 	return 0;
 }

@@ -115,9 +115,9 @@ public:
      * @param states 
      * @return long long
      */
-    double compute_n_for_states_set(uiset states);
+    double compute_n_for_states_set(uiset &states);
 
-    vector<int> sample(int beta, uiset states, vector<int> curr_string, float phi, float phi_multiple);
+    vector<int> sample(int beta, uiset &states, vector<int> &curr_string, float phi, float phi_multiple);
     // Returns a (1 ± ε)-approximation of |L_n(A_unroll)|
     double count_accepted(int n, float epsilon, int kappa_multiple, float phi_multiple);
     // Deterministic counting

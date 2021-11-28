@@ -539,7 +539,7 @@ class NFA(FA):
         for q in self.states_by_layer[0]:
             self.s_for_states[q] = {"": sample_size}
             self.n_for_states[q] = 1
-
+        sample_hits, sample_misses = 0, 0
         # For each i = 1, . . . , n and state q ∈ Q:
         #   (a) Compute N(q i ) given sketch[i − 1]
         #   (b) Sample polynomially many uniform elements from L(q_i) using
@@ -573,18 +573,21 @@ class NFA(FA):
                         potential_sample = self.sample(
                             beta=i, states=frozenset([q]), curr_string="", phi=phi
                         )
+                        sample_misses += 1
                         if potential_sample == "fail":
                             continue
                         elif potential_sample is None:
                             continue
                         this_q_samples.update([potential_sample])
                         sampled_successfully = True
+                        sample_hits += 1
                         break
                     if not sampled_successfully:
                         return 0
 
                 self.s_for_states[q] = this_q_samples
-
+        print("Sample hits:", sample_hits)
+        print("Sample misses:", sample_misses)
         return self.compute_n_for_states_set(frozenset(self.final_states))
 
     def bruteforce_save_all(self, n: int):
@@ -889,6 +892,7 @@ class NFA(FA):
         final_binary = ["1" if i in self.final_states else "0" for i in sort_states]
         ret.append(" ".join(initial_binary))
         ret.append(" ".join(final_binary))
+        ret.append(" ".join(self.sorted_symbols))
         ret.extend(trans)
         return "\n".join(ret)
 

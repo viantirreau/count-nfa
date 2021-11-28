@@ -14,7 +14,7 @@ using namespace std;
 // Will be used to obtain a seed for the random number engine
 random_device rd;
 // Standard mersenne_twister_engine seeded with rd()
-mt19937 gen(rd());
+mt19937_64 gen(rd());
 uniform_real_distribution rand_zero_one(0.0, 1.0);
 
 NFA::NFA(uiset states, uiset input_symbols,
@@ -156,7 +156,8 @@ uiset NFA::final_config(const vector<int> &input_str)
 
 bool NFA::reachable(const vector<int> &input_str, int state)
 {
-    return in(NFA::final_config(input_str), state);
+    uiset final_conf = NFA::final_config(input_str);
+    return in(final_conf, state);
 };
 
 bool NFA::accepts(const vector<int> &input_str)
@@ -279,7 +280,7 @@ double NFA::compute_n_for_single_state(int state)
     return n_q_alpha;
 }
 
-double NFA::compute_n_for_states_set(uiset states)
+double NFA::compute_n_for_states_set(uiset &states)
 {
     int len_states = states.size();
     if (len_states == 0)
@@ -298,7 +299,8 @@ double NFA::compute_n_for_states_set(uiset states)
     {
         // states[i] = (q, i), where q is the original state name in A
         int anchor_state = states_list[i];
-        int s_size = 0, intersection_count = 0;
+        int s_size = 0;
+        double intersection_count = 0;
         // Now estimate the intersection rate for anchor_state
         for (auto &[string, count] : _s_for_states[anchor_state])
         {
@@ -325,7 +327,7 @@ double NFA::compute_n_for_states_set(uiset states)
     return total;
 }
 
-vector<int> NFA::sample(int beta, uiset states, vector<int> curr_string, float phi, float phi_multiple)
+vector<int> NFA::sample(int beta, uiset &states, vector<int> &curr_string, float phi, float phi_multiple)
 {
 
     if (beta == 0)
@@ -354,7 +356,7 @@ vector<int> NFA::sample(int beta, uiset states, vector<int> curr_string, float p
             }
         }
         p_beta_b[b] = all_leading_states;
-        n_p_beta_b[b] = compute_n_for_states_set(all_leading_states);
+        n_p_beta_b[b] = all_leading_states.size() == 0 ? 0 : compute_n_for_states_set(all_leading_states);
     }
     double sum_n_p_beta = 0;
     for (auto &[b, n_p_beta] : n_p_beta_b)
@@ -371,7 +373,7 @@ vector<int> NFA::sample(int beta, uiset states, vector<int> curr_string, float p
     discrete_distribution<int> weighted_sampler(weights.begin(), weights.end());
     int chosen_symbol = _sorted_symbols[weighted_sampler(gen)];
     // w_beta-1 = b · w_beta
-    curr_string.push_back(chosen_symbol);
+    curr_string.insert(curr_string.begin(), chosen_symbol);
     // p_beta-1
     uiset chosen_states = p_beta_b[chosen_symbol];
     //  phi / p_b
@@ -395,11 +397,11 @@ double NFA::count_accepted(int n, float epsilon, int kappa_multiple, float phi_m
     ll kappa = ceil(n * _states.size() / epsilon);
     // c(κ)
     ll retries_sample = retries_per_sample(kappa);
-    cout << "Retries per sample: " << retries_sample << endl;
+    cout << "retries_per_sample " << retries_sample << endl;
     ll sample_size = kappa_multiple * kappa;
     ll sample_hits = 0, sample_misses = 0;
 
-    cout << "Sample size: " << sample_size << endl;
+    cout << "sample_size " << sample_size << endl;
     double exp_minus_five = exp(-5);
     // For each state q ∈ I, set N(q_0) = |L(q_0)| = 1
     // and S(q_0) = L(q_0) = {λ}
@@ -437,7 +439,9 @@ double NFA::count_accepted(int n, float epsilon, int kappa_multiple, float phi_m
                 bool sampled_successfully = false;
                 for (ll retry = 0; retry < retries_sample; retry++)
                 {
-                    vector<int> potential_sample = sample(i, {q}, {}, phi, phi_multiple);
+                    uiset sampler_states = {q};
+                    vector<int> sampler_empty = {};
+                    vector<int> potential_sample = sample(i, sampler_states, sampler_empty, phi, phi_multiple);
                     if (!potential_sample.size())
                     {
                         sample_misses++;
@@ -459,9 +463,9 @@ double NFA::count_accepted(int n, float epsilon, int kappa_multiple, float phi_m
             _s_for_states[q] = this_q_samples;
         }
     }
-    cout << "Sample misses: " << sample_misses << "\n"
-         << "Sample hits: " << sample_hits << "\n"
-         << "Miss ratio: " << (double)sample_misses / sample_hits << endl;
+    cout << "sample_misses " << sample_misses << "\n"
+         << "sample_hits " << sample_hits << "\n"
+         << "miss_ratio " << (double)sample_misses / sample_hits << endl;
     // |L(F^n)|
     return compute_n_for_states_set(_final_states);
 }
