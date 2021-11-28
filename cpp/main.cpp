@@ -7,6 +7,10 @@ using namespace std::chrono;
 
 int main(int argc, char **argv)
 {
+	bool calc_bruteforce = true;
+	if (argc > 1 && strcmp(argv[1], "0") == 0)
+		calc_bruteforce = false;
+
 	// fast I/O
 	ios_base::sync_with_stdio(false);
 	cin.tie(NULL);
@@ -64,14 +68,17 @@ int main(int argc, char **argv)
 	auto t0 = high_resolution_clock::now();
 	double estimation = unrolled.count_accepted(n_str_len, epsilon, kappa_multiple, phi_multiple);
 	auto t1 = high_resolution_clock::now();
-	ll bruteforce = nfa.bruteforce_count_only(n_str_len);
-	auto t2 = high_resolution_clock::now();
+	if (calc_bruteforce)
+	{
+		ll bruteforce = nfa.bruteforce_count_only(n_str_len);
+		auto t2 = high_resolution_clock::now();
+		auto bruteforce_time = duration_cast<milliseconds>(t2 - t1).count();
+		std::cout << "bruteforce " << bruteforce << "\n"
+				  << "bruteforce_time " << bruteforce_time << endl;
+	}
 	auto estimation_time = duration_cast<milliseconds>(t1 - t0).count();
-	auto bruteforce_time = duration_cast<milliseconds>(t2 - t1).count();
 
-	std::cout << "bruteforce " << bruteforce << "\n"
-			  << "bruteforce_time " << bruteforce_time << "\n"
-			  << "estimation " << estimation << "\n"
+	std::cout << "estimation " << estimation << "\n"
 			  << "estimation_time " << estimation_time << endl;
 
 	return 0;

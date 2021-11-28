@@ -162,7 +162,8 @@ bool NFA::reachable(const vector<int> &input_str, int state)
 
 bool NFA::accepts(const vector<int> &input_str)
 {
-    return not_empty_intersection(NFA::final_config(input_str), _final_states);
+    uiset final_conf = NFA::final_config(input_str);
+    return not_empty_intersection(final_conf, _final_states);
 }
 
 vector<int> int_to_binary(int number, int length)
