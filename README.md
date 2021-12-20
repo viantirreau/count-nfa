@@ -248,3 +248,9 @@ Experimentalmente, para un CPU Intel i7 6700K @ 4.5 GHz, se obtiene que el tiemp
 del algoritmo de aproximación está acotado por arriba por `8e-2 |Q|^3 n^3 / epsilon`.
 Así, si se busca un tiempo de ejecución de 5000 milisegundos para un NFA con 1000 estados
 útiles y largo `n=25`, se necesitaría `epsilon=2.5e8`
+
+### Eficiencia del tamaño muestral
+
+![sample_efficiency](img/sample_efficiency.png)
+
+Se observa una relación inversa entre el error relativo y el tamaño muestral, que escala aproximadamente con el logaritmo del tamaño muestral.
