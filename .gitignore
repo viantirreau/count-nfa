@@ -144,3 +144,5 @@ cython_debug/
 *.o
 cpp/main
 random_nfa_from_matrices.pkl
+*.pkl
+**/*.pkl
