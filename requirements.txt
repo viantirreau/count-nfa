@@ -1,8 +1,10 @@
+# Base requirements for nfa_lib
 tqdm
+graphviz
+networkx
+# Requirements for interactive use
 jupyter
 pandas
 matplotlib
 seaborn
-graphviz
-networkx
 sklearn
