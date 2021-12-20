@@ -78,7 +78,7 @@ int main(int argc, char **argv)
 	}
 	auto estimation_time = duration_cast<milliseconds>(t1 - t0).count();
 
-	std::cout << "estimation " << estimation << "\n"
+	std::cout << "estimation " << (int)estimation << "\n"
 			  << "estimation_time " << estimation_time << endl;
 
 	return 0;
