@@ -16,6 +16,7 @@ random_device rd;
 // Standard mersenne_twister_engine seeded with rd()
 mt19937_64 gen(rd());
 uniform_real_distribution rand_zero_one(0.0, 1.0);
+ll sampled_symbols = 0;
 
 NFA::NFA(uiset states, uiset input_symbols,
          trans_t transitions,
@@ -132,7 +133,7 @@ void NFA::remove_unreachable_states()
     _reverse_transitions = new_rev_trans;
 };
 
-uiset NFA::final_config(const vector<int> &input_str)
+uiset NFA::final_config(const deque<int> &input_str)
 {
     // Read the string one symbol at a time
     // and keep track of the current states.
@@ -154,22 +155,22 @@ uiset NFA::final_config(const vector<int> &input_str)
     return curr_states;
 };
 
-bool NFA::reachable(const vector<int> &input_str, int state)
+bool NFA::reachable(const deque<int> &input_str, int state)
 {
     uiset final_conf = NFA::final_config(input_str);
     return in(final_conf, state);
 };
 
-bool NFA::accepts(const vector<int> &input_str)
+bool NFA::accepts(const deque<int> &input_str)
 {
     uiset final_conf = NFA::final_config(input_str);
     return not_empty_intersection(final_conf, _final_states);
 }
 
-vector<int> int_to_binary(int number, int length)
+deque<int> int_to_binary(int number, int length)
 {
     // Initialize result with `length` zeros
-    vector<int> result(length);
+    deque<int> result(length);
     for (int bit_idx = 0; bit_idx < length; bit_idx++)
         result[length - bit_idx - 1] = (number >> bit_idx) & 1;
     return result;
@@ -180,7 +181,7 @@ long long NFA::bruteforce_count_only(int n)
     long long count = 0;
     long long max_string_id = 1 << n;
     long long string_id;
-    vector<int> string;
+    deque<int> string;
     for (string_id = 0; string_id < max_string_id; string_id++)
     {
         string = int_to_binary(string_id, n);
@@ -328,7 +329,7 @@ double NFA::compute_n_for_states_set(uiset &states)
     return total;
 }
 
-vector<int> NFA::sample(int beta, uiset &states, vector<int> &curr_string, float phi, float phi_multiple)
+deque<int> NFA::sample(int beta, uiset &states, deque<int> &curr_string, float phi, float phi_multiple)
 {
 
     if (beta == 0)
@@ -373,6 +374,7 @@ vector<int> NFA::sample(int beta, uiset &states, vector<int> &curr_string, float
 
     discrete_distribution<int> weighted_sampler(weights.begin(), weights.end());
     int chosen_symbol = _sorted_symbols[weighted_sampler(gen)];
+    sampled_symbols++;
     // w_beta-1 = b · w_beta
     curr_string.insert(curr_string.begin(), chosen_symbol);
     // p_beta-1
@@ -406,8 +408,8 @@ double NFA::count_accepted(int n, float epsilon, int kappa_multiple, float phi_m
     double exp_minus_five = exp(-5);
     // For each state q ∈ I, set N(q_0) = |L(q_0)| = 1
     // and S(q_0) = L(q_0) = {λ}
-    vector<int> empty_vector;
-    map<vector<int>, ll> empty_string;
+    deque<int> empty_vector;
+    map<deque<int>, ll> empty_string;
     empty_string[empty_vector] = sample_size;
     for (auto q : _states_by_layer[0])
     {
@@ -432,7 +434,7 @@ double NFA::count_accepted(int n, float epsilon, int kappa_multiple, float phi_m
                 cout << "Got 0 when computing n_q_alpha for q=" << q << endl;
                 exit(1);
             }
-            map<vector<int>, ll> this_q_samples;
+            map<deque<int>, ll> this_q_samples;
             // sample probability
             float phi = exp_minus_five / n_q_alpha;
             for (ll sample_i = 0; sample_i < sample_size; sample_i++)
@@ -441,8 +443,8 @@ double NFA::count_accepted(int n, float epsilon, int kappa_multiple, float phi_m
                 for (ll retry = 0; retry < retries_sample; retry++)
                 {
                     uiset sampler_states = {q};
-                    vector<int> sampler_empty = {};
-                    vector<int> potential_sample = sample(i, sampler_states, sampler_empty, phi, phi_multiple);
+                    deque<int> sampler_empty = {};
+                    deque<int> potential_sample = sample(i, sampler_states, sampler_empty, phi, phi_multiple);
                     if (!potential_sample.size())
                     {
                         sample_misses++;
@@ -466,6 +468,7 @@ double NFA::count_accepted(int n, float epsilon, int kappa_multiple, float phi_m
     }
     cout << "sample_misses " << sample_misses << "\n"
          << "sample_hits " << sample_hits << "\n"
+         << "sampled_symbols " << sampled_symbols << "\n"
          << "miss_ratio " << (double)sample_misses / sample_hits << endl;
     // |L(F^n)|
     return compute_n_for_states_set(_final_states);

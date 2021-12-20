@@ -34,9 +34,9 @@ public:
     map<iset, double> _n_for_sets;
     // Store the counts for every
     // sampled string, mapping from
-    // a state to strings (vector of ints)
+    // a state to strings (deque of ints)
     // and their respective sampled counts
-    umap<int, map<vector<int>, ll>> _s_for_states;
+    umap<int, map<deque<int>, ll>> _s_for_states;
     // Sorted symbols for iteration and sampling
     vector<int> _sorted_symbols;
     // Map of the form new_q => {old_q, layer}
@@ -68,7 +68,7 @@ public:
      * Return the automaton's final configuration after reading 
      * the given string.
      */
-    uiset final_config(const vector<int> &input_str);
+    uiset final_config(const deque<int> &input_str);
     /**
      * Returns true if the NFA reaches the state after reading input_str.
      * 
@@ -76,7 +76,7 @@ public:
      * @param state 
      * @return true | false
      */
-    bool reachable(const vector<int> &input_str, int state);
+    bool reachable(const deque<int> &input_str, int state);
 
     /**
      * @brief Returns true if the automaton
@@ -86,7 +86,7 @@ public:
      * @return true 
      * @return false 
      */
-    bool accepts(const vector<int> &input_str);
+    bool accepts(const deque<int> &input_str);
 
     // Randomized counting
     /**
@@ -117,7 +117,7 @@ public:
      */
     double compute_n_for_states_set(uiset &states);
 
-    vector<int> sample(int beta, uiset &states, vector<int> &curr_string, float phi, float phi_multiple);
+    deque<int> sample(int beta, uiset &states, deque<int> &curr_string, float phi, float phi_multiple);
     // Returns a (1 ± ε)-approximation of |L_n(A_unroll)|
     double count_accepted(int n, float epsilon, int kappa_multiple, float phi_multiple);
     // Deterministic counting

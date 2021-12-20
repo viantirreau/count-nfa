@@ -233,3 +233,18 @@ lo más bajo posible que permita mantener el tiempo de ejecución bajo los lími
 
 Finalmente, `kappa_multiple` debe quedar en 1 para simplificar los cálculos, en tanto su efecto es exactamente contrario a `epsilon`.
 
+![brute_vs_approx](img/brute_vs_approx.png)
+
+El algoritmo de aproximación tiene un _overhead_ importante para largos `n` menores a 20.
+
+Para las instancias más generales de NFAs, con cualquier número de estados y transiciones, se ha observado
+ que el algoritmo de fuerza bruta (exacto) es más rápido que el algoritmo aproximado para largos menores a 20.
+ 
+ | En NFAs generales, se recomienda el uso del algoritmo de aproximación solo para valores `n` superiores a 20.
+
+![exec_time_fit](img/exec_time_fit.png)
+
+Experimentalmente, para un CPU Intel i7 6700K @ 4.5 GHz, se obtiene que el tiempo de ejecución (en ms)
+del algoritmo de aproximación está acotado por arriba por `8e-2 |Q|^3 n^3 / epsilon`.
+Así, si se busca un tiempo de ejecución de 5000 milisegundos para un NFA con 1000 estados
+útiles y largo `n=25`, se necesitaría `epsilon=2.5e8`
