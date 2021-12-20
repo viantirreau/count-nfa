@@ -254,3 +254,20 @@ Así, si se busca un tiempo de ejecución de 5000 milisegundos para un NFA con 1
 ![sample_efficiency](img/sample_efficiency.png)
 
 Se observa una relación inversa entre el error relativo y el tamaño muestral, que escala aproximadamente con el logaritmo del tamaño muestral.
+
+# Sobre fracciones parciales
+
+Durante el transcurso de la investigación, vimos múltiples comportamientos interesantes sobre la densidad de
+aceptación, esto es, la cantidad de palabras aceptadas dividido entre la máxima cantidad posible de dicho
+largo. Por ejemplo, para un alfabeto de tamaño 2, la densidad de aceptación es la cantidad de palabras de largo `n`
+aceptadas, dividido entre `2^n`.
+
+A continuación, se listan algunos casos emblemáticos, junto con sus determinizaciones y densidades hasta `n=15`.
+
+![one_third](img/one_third.png)
+
+![two_thirds](img/two_thirds.png)
+
+![three_fifths](img/three_fifths.png)
+
+![three_sevenths](img/three_sevenths.png)
