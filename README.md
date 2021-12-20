@@ -1,14 +1,14 @@
 # #NFA FPRAS
 
-Implementación de código para el paper #NFA admits an FPRAS: Efficient Enumeration, Counting,
-and Uniform Generation for Logspace Classes, de Marcelo Arenas, Luis Alberto Croquevielle,
-Rajesh Jayaram and Cristian Riveros.
+Implementación de código para el paper **#NFA admits an FPRAS: Efficient Enumeration, Counting,
+and Uniform Generation for Logspace Classes**, de Marcelo Arenas, Luis Alberto Croquevielle,
+Rajesh Jayaram y Cristian Riveros.
 
 # Estructura del proyecto
 
 ## Python
 
-La carpeta `nfa_lib` contiene una implementación en Python de este algoritmo.
+La carpeta [`nfa_lib`](nfa_lib/) contiene una implementación en Python de este algoritmo.
 El archivo `nfa.py` modela una clase `NFA` con todos los métodos
 necesarios para ejecutar el algoritmo, junto con algunas utilidades para 
 la generación de instancias de NFAs aleatorias. Además, implementa
@@ -151,7 +151,7 @@ La sexta línea contiene `A` números separados por espacio, que corresponden a 
 para los símbolos del alfabeto de tamaño `A`. Estos símbolos deben ser consistentes
 con la notación de las transiciones, detallada a continuación.
 
-Las siguientes `T` líneas se componen de tres números separados por espacio, `p a q`.
+Las siguientes `T` líneas se componen de tres números separados por espacio, `p` `a` `q`.
 Corresponden a las `T` transiciones, en las que el primer número se refiere al estado
 de origen `p` por su etiqueta, el segundo número `a` es un símbolo del alfabeto y el
 tercero corresponde al estado de destino. Es decir, representa una transición entre el estado
@@ -193,8 +193,8 @@ estimation_time 24522
 ```
 
 `retries_per_sample` corresponde a la cantidad de veces que se intentará nuevamente
-un muestreo rechazado. Este valor depende de kappa, mediante la función `c(kappa)`, y normalmente
-es muchísimo más alto de lo necesario. Para este caso particular, el múltiplo de phi,
+un muestreo rechazado. Este valor depende de kappa, mediante la función `retries_per_sample(kappa)`, 
+y normalmente es muchísimo más alto de lo necesario. Para este caso particular, el múltiplo de phi,
  que controla la probabilidad de rechazo es tan alto (cuarto parámetro de la primera línea, =500) 
  que no se rechaza ningún muestreo. La cantidad de muestreos rechazados se reporta en 
  `sample_misses`, mientras  que la cantidad de muestreos exitosos se reporta en `sample_hits`. 
@@ -203,10 +203,33 @@ es muchísimo más alto de lo necesario. Para este caso particular, el múltiplo
  `bruteforce` corresponde al conteo exacto por fuerza bruta, mientras que `bruteforce_time` reporta
  el tiempo de ejecución en milisegundos para este método.
 
- Análogamente, `estimation` imprime la estimación de la cantidad de strings de largo 25 aceptados, mientras que 
-`estimation_time` reporta su tiempo de ejecución en milisegundos.
+ Análogamente, `estimation` imprime la estimación de la cantidad de strings de largo 25 aceptados, 
+ mientras que `estimation_time` reporta su tiempo de ejecución en milisegundos.
 
 En este caso particular, el error relativo es de `0.00121`.
 
 # Guidelines sobre los parámetros
+
+La unidad básica del tiempo de ejecución del algoritmo es el tiempo necesario para hacer un sample.
+Este tiempo es aproximadamente lineal en el largo de la palabra `n`. El segundo factor importante
+es la cantidad total de muestras que realiza el algoritmo, que depende de tres parámetros y dos constantes.
+
+El primer parámetro es `epsilon`, que afecta al valor compuesto `kappa`, cuya ecuación es `⌈n*m/epsilon⌉`.
+En ella aparecen también las dos constantes, `n` y `m`, que corresponden al largo del string
+y a la cantidad total de estados en la versión "estirada" (`unroll`) del NFA, respectivamente.
+ `m`, a su vez,  está acotado por `|Q| * n`. Puede ser menor a esta cantidad por la introducción de estados 
+ inalcanzables o sumideros al estirar el NFA, que son removidos antes de ejecutar la estimación.
+
+El segundo parámetro que controla el tiempo de ejecución es `kappa_multiple`, que afecta de forma
+directa la cantidad de muestras que se acumulan por cada estado en NFA unroll. 
+
+Por último, el tercer parámetro es `phi_multiple`. Mientras mayor sea su valor,
+ menor es la probabilidad de rechazo de una muestra, con lo cual
+`miss_ratio` tiende a cero y las muestras se tornan más eficientes (aunque posiblemente sesgadas).
+
+Para ambientes en que el tiempo de ejecución es la variable que se desee mantener acotada, la recomendación
+es mantener `sample_misses` en 0, mediante un `phi_multiple` alto, cercano a 500. `epsilon` debería ser
+lo más bajo posible que permita mantener el tiempo de ejecución bajo los límites.
+
+Finalmente, `kappa_multiple` debe quedar en 1 para simplificar los cálculos, en tanto su efecto es exactamente contrario a `epsilon`.
 
